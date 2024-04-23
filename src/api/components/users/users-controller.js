@@ -50,15 +50,23 @@ async function createUser(request, response, next) {
     const name = request.body.name;
     const email = request.body.email;
     const password = request.body.password;
+    const password_confirm = request.body.password_confirm;
 
-    const emails = await usersService.getEmails(email);
-    for (let i = 0; i < emails.length; i++) {
-      if (emails[i] === email) {
-        throw errorResponder(
-          errorTypes.ERROR_EMAIL_ALREADY_TAKEN,
-          'User created with this email already exist'
-        );
-      }
+    if (password !== password_confirm) {
+      throw errorResponder(
+        errorTypes.INVALID_PASSWORD,
+        'konfirmasi password gagal'
+      );
+    }
+
+    const getEmails = await usersService.getEmails();
+
+    const existingEmail = getEmails.find((user) => user.email === email);
+    if (existingEmail) {
+      throw errorResponder(
+        errorTypes.EMAIL_ALREADY_TAKEN,
+        'User created with this email already exists'
+      );
     }
 
     const success = await usersService.createUser(name, email, password);
@@ -88,14 +96,14 @@ async function updateUser(request, response, next) {
     const name = request.body.name;
     const email = request.body.email;
 
-    const emails = await usersService.getEmails(email);
-    for (let i = 0; i < emails.length; i++) {
-      if (emails[i] === email) {
-        throw errorResponder(
-          errorTypes.ERROR_EMAIL_ALREADY_TAKEN,
-          'User created with this email already exist'
-        );
-      }
+    const getEmails = await usersService.getEmails();
+
+    const existingEmail = getEmails.find((user) => user.email === email);
+    if (existingEmail) {
+      throw errorResponder(
+        errorTypes.EMAIL_ALREADY_TAKEN,
+        'User created with this email already exists'
+      );
     }
 
     const success = await usersService.updateUser(id, name, email);
@@ -136,6 +144,44 @@ async function deleteUser(request, response, next) {
     return next(error);
   }
 }
+async function updatePassword(request, response, next) {
+  try {
+    const id = request.params.id;
+    const password = request.body.password;
+    const new_password = request.body.new_password;
+    const new_password_conf = request.body.new_password_conf;
+
+    // mengecek apakah password lama sama dengan yang ada di database
+
+    const old_password = await usersService.getOldPassword(id, password);
+    if (!old_password) {
+      throw errorResponder(
+        errorTypes.INVALID_PASSWORD,
+        'konfirmasi password yang di gunakan saat ini salah!'
+      );
+    }
+
+    // mengecek apakah password baru benar
+    if (new_password !== new_password_conf) {
+      throw errorResponder(
+        errorTypes.INVALID_PASSWORD,
+        'konfirmasi password gagal'
+      );
+    }
+
+    const success = await usersService.updatePassword(id, new_password);
+    if (!success) {
+      throw errorResponder(
+        errorTypes.UNPROCESSABLE_ENTITY,
+        'Failed to update password'
+      );
+    }
+
+    return response.status(200).json({ id });
+  } catch (error) {
+    return next(error);
+  }
+}
 
 module.exports = {
   getUsers,
@@ -143,4 +189,5 @@ module.exports = {
   createUser,
   updateUser,
   deleteUser,
+  updatePassword,
 };

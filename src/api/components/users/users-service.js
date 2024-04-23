@@ -1,5 +1,6 @@
 const usersRepository = require('./users-repository');
 const { hashPassword } = require('../../../utils/password');
+const { passwordMatched } = require('../../../utils/password');
 
 /**
  * Get list of users
@@ -26,7 +27,7 @@ async function getUsers() {
  * @returns {Array}
  */
 async function getEmails() {
-  const users = await usersRepository.getEmails();
+  const users = await usersRepository.getUsers();
 
   const results = [];
   for (let i = 0; i < users.length; i += 1) {
@@ -37,6 +38,22 @@ async function getEmails() {
   }
 
   return results;
+}
+
+// mengambil
+async function getOldPassword(id, password) {
+  const getUser = await usersRepository.getUser(id);
+  if (!getUser) {
+    return null;
+  }
+
+  const userPassword = getUser ? getUser.password : '<RANDOM_PASSWORD_FILLER>';
+  const passwordChecked = await passwordMatched(password, userPassword);
+  if (passwordChecked) {
+    return true;
+  } else {
+    return null;
+  }
 }
 
 /**
@@ -103,6 +120,25 @@ async function updateUser(id, name, email) {
   return true;
 }
 
+async function updatePassword(id, new_password) {
+  const user = await usersRepository.getUser(id);
+
+  // User not found
+  if (!user) {
+    return null;
+  }
+
+  const hashedPassComp = await hashPassword(new_password);
+
+  try {
+    await usersRepository.updatePassword(id, hashedPassComp);
+  } catch (err) {
+    return null;
+  }
+
+  return true;
+}
+
 /**
  * Delete user
  * @param {string} id - User ID
@@ -132,4 +168,6 @@ module.exports = {
   createUser,
   updateUser,
   deleteUser,
+  updatePassword,
+  getOldPassword,
 };
