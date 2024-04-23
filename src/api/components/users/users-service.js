@@ -22,6 +22,24 @@ async function getUsers() {
 }
 
 /**
+ * Get list of emails
+ * @returns {Array}
+ */
+async function getEmails() {
+  const users = await usersRepository.getEmails();
+
+  const results = [];
+  for (let i = 0; i < users.length; i += 1) {
+    const user = users[i];
+    results.push({
+      email: user.email,
+    });
+  }
+
+  return results;
+}
+
+/**
  * Get user detail
  * @param {string} id - User ID
  * @returns {Object}
@@ -110,6 +128,7 @@ async function deleteUser(id) {
 module.exports = {
   getUsers,
   getUser,
+  getEmails,
   createUser,
   updateUser,
   deleteUser,

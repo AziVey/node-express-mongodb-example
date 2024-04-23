@@ -51,6 +51,16 @@ async function createUser(request, response, next) {
     const email = request.body.email;
     const password = request.body.password;
 
+    const emails = await usersService.getEmails(email);
+    for (let i = 0; i < emails.length; i++) {
+      if (emails[i] === email) {
+        throw errorResponder(
+          errorTypes.ERROR_EMAIL_ALREADY_TAKEN,
+          'User created with this email already exist'
+        );
+      }
+    }
+
     const success = await usersService.createUser(name, email, password);
     if (!success) {
       throw errorResponder(
@@ -77,6 +87,16 @@ async function updateUser(request, response, next) {
     const id = request.params.id;
     const name = request.body.name;
     const email = request.body.email;
+
+    const emails = await usersService.getEmails(email);
+    for (let i = 0; i < emails.length; i++) {
+      if (emails[i] === email) {
+        throw errorResponder(
+          errorTypes.ERROR_EMAIL_ALREADY_TAKEN,
+          'User created with this email already exist'
+        );
+      }
+    }
 
     const success = await usersService.updateUser(id, name, email);
     if (!success) {
